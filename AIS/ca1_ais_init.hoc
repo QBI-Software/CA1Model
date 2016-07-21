@@ -1,0 +1,229 @@
+load_file("nrngui.hoc")
+nrn_load_dll("channels/nrnmech.dll")
+
+//=============================================================================
+// Globals
+//=============================================================================
+strdef sectype
+objref all, somatic, axonal, basal, apical, ais
+//=============================================================================
+// Procedures
+//=============================================================================
+cvode_active(1)
+//   Spike counter
+
+objref apc, v1
+
+proc insert_APC() {
+	apc = new APCount(0.5)
+	apc.thresh = $1
+	v1 = new Vector()
+	apc.record(v1)
+}
+
+//    IClamp  
+objectvar clamp
+proc insert_IClamp() {
+     clamp = new IClamp(0.5)
+     clamp.del = $3
+     clamp.dur = $1
+     clamp.amp = $2
+}
+
+proc main(){
+
+  del=100
+  tstopI=1000
+ 
+  th = -20
+  //access somatic
+  insert_APC(th)
+  
+  for u = 0,5 {
+	current = u * 0.1
+	
+	//access somatic
+	insert_IClamp(tstopI,current,del)
+
+	//////////////run//////////////////////// 
+	 finitialize(v_init)
+	 fcurrent()
+	 run()
+	/////////////////////////////////////
+	 
+	  // print the spike number 
+	  printf("\n Current: %.2f nA | # Spikes: %d\n", current,  apc.n)
+	  printf("___________________\n")
+   
+   }   // for u
+
+}
+// --------- Variable AIS regions -------------- //
+proc process_ais(){
+	
+	//~24um mean length of NaV1.6 (whole AIS)
+	preax = $1 		//micron
+	proxais = 12 + preax 
+	distais = 12 + proxais
+	
+	forsec ais {
+		ifsec "axon[0]" {
+			print "Axon length=", L
+			for(x){
+			   d = x * L //distance along axon
+			   //diam = 1.5
+			   //print d
+			   if (d < preax){
+				  print "preaxon seg:", d
+				  diam(x) 			= 1.75
+				  gbar_nax(x) 		= gna_axon
+				  gkdrbar_kdr(x) 	= gkdr_axon
+				  gbar_km(x) 		= km_axon
+				  gkabar_kap(x) 	= kap_axon
+				  //No change to axon settings
+			   }else if (d < proxais){
+				  print "proximal ais:", d
+				  diam(x) 			= 1.5
+				  gbar_nax(x) 		= gna_ais_prox
+				  gkdrbar_kdr(x) 	= gkdr_ais_prox
+				  gbar_km(x) 		= km_ais_prox
+				  gkabar_kap(x) 	= kap_ais_prox
+				  insert nap // Persistent Na
+                   gnabar_nap = gnap * 0.5
+			   }else if (d < distais){
+				  print "distal ais:", d
+				  diam(x) 			= 1
+				  gbar_nax(x) 		= gna_ais_distal
+				  gkdrbar_kdr(x) 	= gkdr_ais_distal
+				  gbar_km(x) 		= km_ais_distal
+				  gkabar_kap(x) 	= kap_ais_distal
+				  insert nap // Persistent Na
+                   gnabar_nap = gnap * 0.5
+			   }else{
+				  //print "axon"
+				  //No change to axon settings - reset here
+			   	  diam(x) 			= 1
+				  gbar_nax(x) 		= gna_axon
+				  gkdrbar_kdr(x) 	= gkdr_axon
+				  gbar_km(x) 		= km_axon
+				  gkabar_kap(x) 	= kap_axon
+			   }
+			}
+		 }
+		   
+	}
+	if ($2){
+	//RUN PROTOCOL
+	print "\n-----------------------\nRunning protocol for preAIS length=", $1
+	main()
+	}
+}
+
+
+//=============================================================================
+// Geometry
+//=============================================================================
+print "Loading geometry..."
+load_file("ca1_ais_cellbuilder.hoc") //cellbuilder format of cell.hoc
+somatic=new SectionList()
+axonal=new SectionList() //split to ais[3] at connection to soma
+ais=new SectionList()
+basal=new SectionList()
+apical=new SectionList() //split to trunk and tree
+
+//Group segments morphologically
+soma distance() //set origin
+forall { 
+
+	ifsec "soma" {
+		print "Setting soma:", secname()
+		somatic.append()
+	}
+	ifsec "axon" {
+		print "Setting axon:", secname()
+		//Segment first part of axon
+		ifsec "axon[0]" {
+		   print "Proximal axon: ", L
+		   //1 um segments
+		   if (L%2 == 0){
+		   	 nseg = L - 1
+		   	}else{
+		   	 nseg = L
+		   	}
+		   	print "nseg: ", nseg
+		   	ais.append()
+		}
+		axonal.append()
+	}
+	ifsec "dendrite" {
+	    //print "Setting basal:", secname()
+		basal.append()
+	}
+	ifsec "apical_dendrite" {
+		//print "Setting apical:", secname()
+		apical.append()
+	}
+
+}
+
+//Add axonal branch and remove from basal
+i=0
+for case (&i,2,8,9){
+  print "Adding axon branch:", i
+  dendrite[i] axonal.append()
+  dendrite[i] basal.remove()
+}
+
+//Split Apical into trunk and tree
+load_file("ca1_apical-trunk-list.hoc")
+load_file("ca1_apical-non-trunk-list.hoc")
+
+
+
+
+//=============================================================================
+// Insert Mechanisms
+//=============================================================================
+print "Inserting mechanisms..."
+load_file("ca1_ais_cell-mech.hoc")
+// Balance Vm
+load_file("ca1_ais_current-balance.hoc")
+
+//=============================================================================
+// Run Control
+//=============================================================================
+tstop = 1000
+dt = 0.025 //ms 40khz
+
+startdelay = 200
+v_init = -70 
+
+// AUTORUN
+xopen("ca1_windows.ses")
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
+//Allow change of preaxon length
+xpanel("Change preaxon length")
+xradiobutton("preaxon = 1 um", "process_ais(1,1)")
+xradiobutton("preaxon = 5 um", "process_ais(5,1)")
+xradiobutton("preaxon = 100 um", "process_ais(100,1)")
+xpanel()
+/* Make a shape graph with highlighted sections*/
+	objref ca1_shape
+	ca1_shape=new Shape()
+	ca1_shape.color_list(somatic,2)
+	ca1_shape.color_list(axonal,3)
+	ca1_shape.color_list(ais,5)
+	ca1_shape.color_list(basal,4)
+	ca1_shape.color_list(apical_trunk_list,8)
+	ca1_shape.color_list(apical_non_trunk_list,9)
+	ca1_shape.show(0)
+	//ca1_shape.printfile("ca1_ais.eps")
+	
+//run OPTIONS
+run() 			//manual
+//main() 			//protocol  
+process_ais(1,0) 	    //insert ais conductances but don't run protocol
+//process_ais(1,1) 	    //insert ais conductances and run protocol
+nrnmainmenu()
+
+

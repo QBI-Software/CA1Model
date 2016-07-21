@@ -1,0 +1,84 @@
+// Set passive membrane properties
+  //Rm (ohm/cm2)
+    Rm_trunk 				= 36900
+    Rm_non_trunk 			= 36900
+    Rm_basal 				= 46000
+    Rm_tip 					= 36900
+    Rm_soma 				= 20000
+    Rm_axon 				= 28000
+    
+  //Ra (ohm-cm)
+    Ra_basal 				= 150
+    Ra_trunk 				= 150
+    Ra_non_trunk 			= 150
+    Ra_soma 				= 150
+    Ra_tip 					= 150
+    Ra_axon 				= 50
+    
+  //Cm (uF/cm2)
+    Cm_default 				= 1
+    Cm_axon 				= 1
+    Cm_soma 				= 1
+    Cm_trunk 				= 1.192
+    Cm_non_trunk 			= 1.192
+    Cm_basal 				= 1.144
+    Cm_tip 					= 1.192 
+
+ 
+// Set initial conductance values (mho/cm2)
+  //Na
+   potNa					= 50
+   gna						= 0.1 		
+   gna_axon 				= 0.00008 
+   gna_ais_prox				= 0.02
+   gna_ais_distal			= 1			//High Na initial segment
+   gna_dend					= 0.0125
+   gna_notrunk				= 0.035
+   gnap          			= 0.001
+   //AIS subunits
+   gna12					= 0
+   gna16					= 0
+   
+  //K
+   km_soma 					= 0.002 	//M type 
+   km_axon 					= 0.004 	//M type
+   km_ais_prox				= 0.004 	//M type
+   km_ais_distal			= 0.004 	//M type
+   
+   kap_soma 				= 0.005 	//A type proximal
+   kap_axon 				= 0.02 		//A type proximal
+   kap_ais_prox				= 0.02 		//A type proximal
+   kap_ais_distal 			= 0.02 		//A type proximal
+   kap_dend 				= 0.005 	//A type proximal
+   kad_soma 				= 0.005		//A type distal
+   kad_axon 				= 0.02		//A type distal
+   kad_dend 				= 0.005		//A type distal
+   
+   gkdr						= 0.005 	//Delayed Rectifier
+   gkdr_axon 				= 0.02 		//Delayed Rectifier
+   gkdr_ais_prox 			= 0.02 		//Delayed Rectifier
+   gkdr_ais_distal 			= 0.02 		//Delayed Rectifier
+   gkdr_dend				= 0.009		//Delayed Rectifier
+   gkdr_notrunk				= 0.015		//Delayed Rectifier
+  
+  //Ca
+   caL_soma 				= 0 			//L type
+   caL_trunk				= 0.000632		//L type
+   caLH_soma 				= 0.000000066	//HVA L type 
+   car_soma 				= 0.000000044   //HVA R type 
+   caT_soma 				= 0.000000011   //LVA T type
+   
+   //AHP
+   mykca_soma 				= 0.2475 	  //Med Fast Ca activ AHP (mAHP)
+   kca_soma 				= 0.0007 	  //Slow AHP
+   
+   //IH
+   hbar_soma 				= 1.8e-5 
+
+  
+   /* Global */
+  dt = 0.01
+  celsius   = 32
+  steps_per_ms = 1/dt
+  tstop = 100
+  v_init = -70

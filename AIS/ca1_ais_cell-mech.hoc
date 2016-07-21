@@ -1,0 +1,172 @@
+/* BIOPHYSICAL MECHANISMS */
+load_file("ca1_ais_params.hoc")
+
+
+proc soma_mech(){
+
+// Start inserting mechanisms in cell
+
+      //sectype ="soma"
+      forsec somatic {
+          //diam = 15 		//Colbert etal 1996
+          insert na3
+	      insert kdr
+          gbar_na3    = gna
+          gkdrbar_kdr = gkdr
+          ena         = potNa
+
+          insert pas    // leak conductance
+			g_pas = 1/Rm_soma       
+			e_pas = v_init
+			Ra    = Ra_soma
+			cm    = Cm_soma
+    
+         /* Causes a SYNTAX error ?? why
+         insert h     // h current 
+			   gbar_h  = hbar_soma
+			   K_h     = 8.8
+			   vhalf_h = -82
+	      */
+
+          insert kap  // proximal A current
+                   gkabar_kap = kap_soma
+                   ek         = -80
+
+          insert km  // m-type potassium current
+                   gbar_km    = km_soma
+                   ek         = -80 
+           
+          insert cal // HVA Ca++-L type current
+                   gcalbar_cal = caL_soma
+           
+          insert cat // LVA Ca++-T type current
+                   gcatbar_cat = caT_soma
+
+           insert somacar // HVAm Ca++-R type current
+                   gcabar_somacar = car_soma
+            
+           insert kca   // K(Ca) sAHP potassium type current
+                   gbar_kca = kca_soma
+         
+           insert mykca // K(Ca) mAHP potassium type current
+	           gkbar_mykca = mykca_soma        
+        
+           insert cad  // calcium pump/buffering mechanism 
+        
+      }
+  }
+  
+proc axon_mech(){
+//  Configure Axon
+
+      //sectype="axon"
+      forsec axonal {
+      	  //diam 				= 1 		//Colbert etal 1996
+	      insert nax
+	      insert kdr
+          gbar_nax    		= gna_axon
+          gkdrbar_kdr 		= gkdr_axon
+          ena         		= potNa
+
+          insert pas  // leak conductance
+				g_pas      	= 1/Rm_axon  
+				e_pas       = v_init
+				Ra          = Ra_axon
+				cm          = Cm_axon
+
+           insert km  // m-type potassium current
+                gbar_km     = km_axon
+                ek          = -80
+
+           insert kap  // proximal A current
+                 gkabar_kap = kap_axon
+                 ek         = -80
+      }
+}
+  
+proc apical_mech() {
+    
+//  Configure apical trunk
+
+      forsec apical_trunk_list {
+          insert na3
+	      insert kdr
+          gbar_na3			= gna
+          gkdrbar_kdr		= gkdr
+          ena         		= potNa
+
+          insert pas // leak conductance
+                    g_pas     =  1/Rm_trunk  
+                    e_pas     = v_init
+                    Ra        = Ra_trunk
+                    cm        = Cm_trunk
+          
+          insert cal // HVA Ca++-L type current
+                   gcalbar_cal = caL_trunk
+          
+          insert somacar // HVAm Ca++-R type current
+                   gcabar_somacar = car_trunk
+                   
+           insert nap // Persistent Na
+                   gnabar_nap = gnap
+
+      }
+ 
+
+// Configure the apical-non-trunk section: insert basic mechanisms   
+    //sectype = "apical non-trunk"
+    forsec apical_non_trunk_list {
+          insert na3notrunk
+	      insert kdr
+          gbar_na3notrunk 	= gna_notrunk
+          gkdrbar_kdr		= gkdr_notrunk
+          ena         		= potNa
+          
+          insert pas // passive properties
+			 g_pas     = 1/Rm_non_trunk 
+			 e_pas     = v_init                     
+			 Ra        = Ra_non_trunk
+			 cm        = Cm_non_trunk
+
+   }
+}
+
+proc basal_mech() {
+// Configure the basal dendrites
+   //sectype = "basal tree"
+   forsec basal {
+   		insert na3dend
+	    insert kdr
+        gbar_na3dend  = gna_dend
+        gkdrbar_kdr   = gkdr_dend
+        ena           = potNa
+
+        insert pas // passive properties
+			g_pas          = 1/Rm_basal  
+			e_pas          = v_init
+			Ra             = Ra_basal
+			cm             = Cm_basal
+      }
+         
+}
+
+proc all_mech() {
+   
+    forall if (ismembrane("kdr") ) {  
+         ek         = -77      //-77 
+     }
+    forall if(ismembrane("ca_ion")) {
+      eca =140
+      ion_style("ca_ion",0,1,0,0,0)
+      vshift_ca = 0
+    }
+  
+}
+//=============================================================================
+// RUN
+//=============================================================================
+soma_mech()
+axon_mech()
+basal_mech()
+apical_mech()
+all_mech()
